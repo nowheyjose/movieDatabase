@@ -8,12 +8,16 @@
 
 import UIKit
 import AFNetworking
+import MBProgressHUD
 
 class MoviesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
     @IBOutlet weak var tableView: UITableView!
+    @IBOutlet var ActInd: UIActivityIndicatorView!
     
     var movies: [NSDictionary]?
+    
+    var refreshControl = UIRefreshControl()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -28,6 +32,7 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         let url = URL(string: "https://api.themoviedb.org/3/movie/now_playing?api_key=\(apiKey)")!
         let request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 10)
         let session = URLSession(configuration: .default, delegate: nil, delegateQueue: OperationQueue.main)
+        MBProgressHUD.showAdded(to: self.view, animated: true)
         let task: URLSessionDataTask = session.dataTask(with: request) { (data: Data?, response: URLResponse?, error: Error?) in
             if let data = data {
                 if let dataDictionary = try! JSONSerialization.jsonObject(with: data, options: []) as? NSDictionary {
@@ -35,21 +40,24 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
                     
                     self.movies = dataDictionary["results"] as! [NSDictionary]
                     self.tableView.reloadData()
+                    MBProgressHUD.hide(for: self.view, animated: true)
                 }
             }
+         self.tableView.refreshControl = self.refreshControl
+         self.refreshControl.addTarget(self, action: "didRefreshList", for: UIControlEvents.valueChanged)
         }
         task.resume()
-        
-        
-        
-        
         
         // Do any additional setup after loading the view.
     }
 
+ 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
+    }
+    func didRefreshList(){
+        self.refreshControl.endRefreshing()
     }
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int{
         
@@ -81,6 +89,14 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
         print("row \(indexPath.row)")
         return cell
     }
+    
+    func tableViewDidStartLoad(_ : UITableView) {
+        ActInd.startAnimating()
+    }
+    func tableViewDidFinishLoad(_ : UITableView) {
+        ActInd.stopAnimating()
+    }
+    
 
     /*
     // MARK: - Navigation
